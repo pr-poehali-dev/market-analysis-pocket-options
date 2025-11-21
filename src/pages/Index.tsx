@@ -1,228 +1,296 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-interface Signal {
-  id: number;
-  asset: string;
-  direction: 'CALL' | 'PUT';
-  confidence: number;
-  timestamp: string;
-  expiry: string;
-  status: 'active' | 'expired' | 'won' | 'lost';
+interface Asset {
+  id: string;
+  name: string;
+  category: 'forex' | 'crypto' | 'stocks' | 'commodities';
 }
 
-const mockChartData = [
-  { time: '09:00', value: 1.0845 },
-  { time: '09:15', value: 1.0852 },
-  { time: '09:30', value: 1.0848 },
-  { time: '09:45', value: 1.0856 },
-  { time: '10:00', value: 1.0862 },
-  { time: '10:15', value: 1.0859 },
-  { time: '10:30', value: 1.0865 },
-];
+interface Analysis {
+  id: number;
+  asset: string;
+  callPercent: number;
+  putPercent: number;
+  recommendation: 'CALL' | 'PUT';
+  timestamp: string;
+}
 
-const mockSignals: Signal[] = [
-  {
-    id: 1,
-    asset: 'EUR/USD',
-    direction: 'CALL',
-    confidence: 78,
-    timestamp: '10:32',
-    expiry: '10:37',
-    status: 'active'
-  },
-  {
-    id: 2,
-    asset: 'BTC/USD',
-    direction: 'PUT',
-    confidence: 85,
-    timestamp: '10:30',
-    expiry: '10:35',
-    status: 'active'
-  },
-  {
-    id: 3,
-    asset: 'GBP/USD',
-    direction: 'CALL',
-    confidence: 72,
-    timestamp: '10:28',
-    expiry: '10:33',
-    status: 'active'
-  },
-  {
-    id: 4,
-    asset: 'GOLD',
-    direction: 'PUT',
-    confidence: 68,
-    timestamp: '10:25',
-    expiry: '10:30',
-    status: 'expired'
-  },
+const assets: Asset[] = [
+  { id: 'eur_usd', name: 'EUR/USD', category: 'forex' },
+  { id: 'gbp_usd', name: 'GBP/USD', category: 'forex' },
+  { id: 'usd_jpy', name: 'USD/JPY', category: 'forex' },
+  { id: 'aud_usd', name: 'AUD/USD', category: 'forex' },
+  { id: 'usd_cad', name: 'USD/CAD', category: 'forex' },
+  { id: 'btc_usd', name: 'BTC/USD', category: 'crypto' },
+  { id: 'eth_usd', name: 'ETH/USD', category: 'crypto' },
+  { id: 'xrp_usd', name: 'XRP/USD', category: 'crypto' },
+  { id: 'ltc_usd', name: 'LTC/USD', category: 'crypto' },
+  { id: 'ada_usd', name: 'ADA/USD', category: 'crypto' },
+  { id: 'aapl', name: 'Apple', category: 'stocks' },
+  { id: 'tsla', name: 'Tesla', category: 'stocks' },
+  { id: 'googl', name: 'Google', category: 'stocks' },
+  { id: 'amzn', name: 'Amazon', category: 'stocks' },
+  { id: 'msft', name: 'Microsoft', category: 'stocks' },
+  { id: 'gold', name: 'Золото', category: 'commodities' },
+  { id: 'silver', name: 'Серебро', category: 'commodities' },
+  { id: 'oil', name: 'Нефть', category: 'commodities' },
+  { id: 'gas', name: 'Газ', category: 'commodities' },
 ];
 
 export default function Index() {
-  const [signals, setSignals] = useState<Signal[]>(mockSignals);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedCategory, setSelectedCategory] = useState<string>('forex');
+  const [selectedAsset, setSelectedAsset] = useState<string>('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [currentAnalysis, setCurrentAnalysis] = useState<Analysis | null>(null);
+  const [history, setHistory] = useState<Analysis[]>([]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const filteredAssets = assets.filter(asset => asset.category === selectedCategory);
+
+  const performAnalysis = () => {
+    if (!selectedAsset) return;
+
+    setIsAnalyzing(true);
+
+    setTimeout(() => {
+      const callPercent = Math.floor(Math.random() * 40) + 55;
+      const putPercent = 100 - callPercent;
+      const recommendation = callPercent > putPercent ? 'CALL' : 'PUT';
+
+      const analysis: Analysis = {
+        id: Date.now(),
+        asset: assets.find(a => a.id === selectedAsset)?.name || '',
+        callPercent,
+        putPercent,
+        recommendation,
+        timestamp: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setCurrentAnalysis(analysis);
+      setHistory(prev => [analysis, ...prev].slice(0, 5));
+      setIsAnalyzing(false);
+    }, 2000);
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <header className="flex items-center justify-between animate-fade-in">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Pocket Option Анализ</h1>
-            <p className="text-muted-foreground mt-1">Торговые сигналы в реальном времени</p>
+      <div className="max-w-5xl mx-auto space-y-6">
+        <header className="text-center animate-fade-in">
+          <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-4">
+            <Icon name="Bot" className="h-8 w-8 text-primary" />
           </div>
-          <div className="text-right">
-            <div className="text-sm text-muted-foreground">Текущее время</div>
-            <div className="text-2xl font-mono font-semibold text-foreground">
-              {currentTime.toLocaleTimeString('ru-RU')}
-            </div>
-          </div>
+          <h1 className="text-4xl font-bold text-foreground mb-2">Бот-Анализатор</h1>
+          <p className="text-muted-foreground">Pocket Option | Выбери актив для анализа</p>
         </header>
 
-        <div className="grid gap-6 md:grid-cols-3 animate-fade-in">
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Активные сигналы</CardTitle>
-              <Icon name="TrendingUp" className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {signals.filter(s => s.status === 'active').length}
+        <Card className="bg-card border-border animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Icon name="Target" className="h-5 w-5 text-primary" />
+              Выбор актива
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Категория</label>
+                <Select value={selectedCategory} onValueChange={(val) => {
+                  setSelectedCategory(val);
+                  setSelectedAsset('');
+                }}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Выберите категорию" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="forex">
+                      <div className="flex items-center gap-2">
+                        <Icon name="DollarSign" className="h-4 w-4" />
+                        <span>Валюты</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="crypto">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Bitcoin" className="h-4 w-4" />
+                        <span>Криптовалюты</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="stocks">
+                      <div className="flex items-center gap-2">
+                        <Icon name="TrendingUp" className="h-4 w-4" />
+                        <span>Акции</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="commodities">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Gem" className="h-4 w-4" />
+                        <span>Сырьё</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Средний процент: {Math.round(signals.filter(s => s.status === 'active').reduce((acc, s) => acc + s.confidence, 0) / signals.filter(s => s.status === 'active').length)}%
-              </p>
-            </CardContent>
-          </Card>
 
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Точность за день</CardTitle>
-              <Icon name="Target" className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Актив</label>
+                <Select value={selectedAsset} onValueChange={setSelectedAsset}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Выберите актив" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredAssets.map(asset => (
+                      <SelectItem key={asset.id} value={asset.id}>
+                        {asset.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button 
+              onClick={performAnalysis} 
+              disabled={!selectedAsset || isAnalyzing}
+              className="w-full h-12 text-lg"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
+                  Анализирую...
+                </>
+              ) : (
+                <>
+                  <Icon name="Sparkles" className="mr-2 h-5 w-5" />
+                  Запустить анализ
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {currentAnalysis && (
+          <Card className="bg-gradient-to-br from-card to-card/50 border-primary/50 animate-fade-in">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Icon name="Zap" className="h-5 w-5 text-primary animate-pulse-glow" />
+                Результат анализа
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-success">82%</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                +5% по сравнению с вчера
-              </p>
+            <CardContent className="space-y-6">
+              <div className="text-center space-y-2">
+                <div className="text-sm text-muted-foreground">Актив</div>
+                <div className="text-3xl font-bold text-foreground">{currentAnalysis.asset}</div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className={`p-6 rounded-xl border-2 transition-all ${
+                  currentAnalysis.recommendation === 'CALL' 
+                    ? 'bg-success/20 border-success shadow-lg shadow-success/20' 
+                    : 'bg-secondary/50 border-border'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Icon name="ArrowUp" className="h-6 w-6 text-success" />
+                      <span className="font-semibold text-foreground">CALL (Вверх)</span>
+                    </div>
+                    {currentAnalysis.recommendation === 'CALL' && (
+                      <Badge className="bg-success text-success-foreground">
+                        Рекомендуется
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-5xl font-mono font-bold text-foreground">
+                    {currentAnalysis.callPercent}%
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Вероятность роста
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-xl border-2 transition-all ${
+                  currentAnalysis.recommendation === 'PUT' 
+                    ? 'bg-destructive/20 border-destructive shadow-lg shadow-destructive/20' 
+                    : 'bg-secondary/50 border-border'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Icon name="ArrowDown" className="h-6 w-6 text-destructive" />
+                      <span className="font-semibold text-foreground">PUT (Вниз)</span>
+                    </div>
+                    {currentAnalysis.recommendation === 'PUT' && (
+                      <Badge className="bg-destructive text-destructive-foreground">
+                        Рекомендуется
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-5xl font-mono font-bold text-foreground">
+                    {currentAnalysis.putPercent}%
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Вероятность падения
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 p-4 bg-primary/10 rounded-lg">
+                <Icon name="Info" className="h-5 w-5 text-primary" />
+                <span className="text-sm text-foreground">
+                  Рекомендация: Открыть позицию <strong className={
+                    currentAnalysis.recommendation === 'CALL' ? 'text-success' : 'text-destructive'
+                  }>{currentAnalysis.recommendation}</strong> на {currentAnalysis.asset}
+                </span>
+              </div>
             </CardContent>
           </Card>
+        )}
 
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Анализы за час</CardTitle>
-              <Icon name="Activity" className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">24</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Обработано активов
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
+        {history.length > 0 && (
           <Card className="bg-card border-border animate-fade-in">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Icon name="LineChart" className="h-5 w-5 text-primary" />
-                График EUR/USD
+                <Icon name="History" className="h-5 w-5 text-primary" />
+                История анализов
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={mockChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="time" 
-                    stroke="hsl(var(--muted-foreground))"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
-                    style={{ fontSize: '12px' }}
-                    domain={['dataMin - 0.001', 'dataMax + 0.001']}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                    labelStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card border-border animate-fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="Signal" className="h-5 w-5 text-primary" />
-                Торговые сигналы
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2">
-                {signals.map((signal, index) => (
+              <div className="space-y-3">
+                {history.map((item) => (
                   <div 
-                    key={signal.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                    key={item.id}
+                    className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 border border-border hover:bg-secondary/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-full ${
-                        signal.direction === 'CALL' 
+                        item.recommendation === 'CALL' 
                           ? 'bg-success/20' 
                           : 'bg-destructive/20'
                       }`}>
                         <Icon 
-                          name={signal.direction === 'CALL' ? 'ArrowUp' : 'ArrowDown'} 
+                          name={item.recommendation === 'CALL' ? 'ArrowUp' : 'ArrowDown'} 
                           className={`h-4 w-4 ${
-                            signal.direction === 'CALL' 
+                            item.recommendation === 'CALL' 
                               ? 'text-success' 
                               : 'text-destructive'
                           }`}
                         />
                       </div>
                       <div>
-                        <div className="font-semibold text-foreground">{signal.asset}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {signal.timestamp} → {signal.expiry}
-                        </div>
+                        <div className="font-semibold text-foreground">{item.asset}</div>
+                        <div className="text-xs text-muted-foreground">{item.timestamp}</div>
                       </div>
                     </div>
                     <div className="text-right">
                       <Badge 
-                        variant={signal.status === 'active' ? 'default' : 'secondary'}
-                        className={`font-mono font-semibold ${
-                          signal.status === 'active' ? 'animate-pulse-glow' : ''
-                        }`}
+                        variant={item.recommendation === 'CALL' ? 'default' : 'destructive'}
+                        className="font-mono font-semibold"
                       >
-                        {signal.confidence}%
+                        {item.recommendation === 'CALL' ? item.callPercent : item.putPercent}%
                       </Badge>
-                      <div className="text-xs text-muted-foreground mt-1 capitalize">
-                        {signal.status === 'active' ? 'активен' : 'истёк'}
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {item.recommendation}
                       </div>
                     </div>
                   </div>
@@ -230,52 +298,7 @@ export default function Index() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        <Card className="bg-card border-border animate-fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Icon name="Zap" className="h-5 w-5 text-primary" />
-              Рекомендации по входу
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="p-4 rounded-lg bg-success/10 border border-success/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon name="TrendingUp" className="h-5 w-5 text-success" />
-                  <span className="font-semibold text-success">Высокий сигнал</span>
-                </div>
-                <div className="text-2xl font-bold text-foreground mb-1">≥ 75%</div>
-                <p className="text-sm text-muted-foreground">
-                  Рекомендуется вход с полной позицией
-                </p>
-              </div>
-
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon name="Activity" className="h-5 w-5 text-primary" />
-                  <span className="font-semibold text-primary">Средний сигнал</span>
-                </div>
-                <div className="text-2xl font-bold text-foreground mb-1">60-74%</div>
-                <p className="text-sm text-muted-foreground">
-                  Рекомендуется осторожный вход
-                </p>
-              </div>
-
-              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon name="AlertCircle" className="h-5 w-5 text-destructive" />
-                  <span className="font-semibold text-destructive">Низкий сигнал</span>
-                </div>
-                <div className="text-2xl font-bold text-foreground mb-1">{'< 60%'}</div>
-                <p className="text-sm text-muted-foreground">
-                  Вход не рекомендуется
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        )}
       </div>
     </div>
   );
