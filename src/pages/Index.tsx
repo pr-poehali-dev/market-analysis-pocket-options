@@ -18,6 +18,7 @@ interface Analysis {
   putPercent: number;
   recommendation: 'CALL' | 'PUT';
   timestamp: string;
+  timeframe: number;
 }
 
 const assets: Asset[] = [
@@ -26,16 +27,42 @@ const assets: Asset[] = [
   { id: 'usd_jpy', name: 'USD/JPY', category: 'forex' },
   { id: 'aud_usd', name: 'AUD/USD', category: 'forex' },
   { id: 'usd_cad', name: 'USD/CAD', category: 'forex' },
+  { id: 'nzd_usd', name: 'NZD/USD', category: 'forex' },
+  { id: 'eur_gbp', name: 'EUR/GBP', category: 'forex' },
+  { id: 'eur_jpy', name: 'EUR/JPY', category: 'forex' },
+  { id: 'gbp_jpy', name: 'GBP/JPY', category: 'forex' },
+  { id: 'aud_jpy', name: 'AUD/JPY', category: 'forex' },
+  { id: 'usd_chf', name: 'USD/CHF', category: 'forex' },
+  { id: 'eur_chf', name: 'EUR/CHF', category: 'forex' },
+  { id: 'gbp_chf', name: 'GBP/CHF', category: 'forex' },
+  { id: 'aud_cad', name: 'AUD/CAD', category: 'forex' },
+  { id: 'nzd_jpy', name: 'NZD/JPY', category: 'forex' },
+  { id: 'cad_jpy', name: 'CAD/JPY', category: 'forex' },
+  { id: 'chf_jpy', name: 'CHF/JPY', category: 'forex' },
+  { id: 'eur_aud', name: 'EUR/AUD', category: 'forex' },
+  { id: 'eur_cad', name: 'EUR/CAD', category: 'forex' },
+  { id: 'eur_nzd', name: 'EUR/NZD', category: 'forex' },
+  { id: 'gbp_aud', name: 'GBP/AUD', category: 'forex' },
+  { id: 'gbp_cad', name: 'GBP/CAD', category: 'forex' },
+  { id: 'gbp_nzd', name: 'GBP/NZD', category: 'forex' },
+  { id: 'aud_chf', name: 'AUD/CHF', category: 'forex' },
+  { id: 'aud_nzd', name: 'AUD/NZD', category: 'forex' },
   { id: 'btc_usd', name: 'BTC/USD', category: 'crypto' },
   { id: 'eth_usd', name: 'ETH/USD', category: 'crypto' },
   { id: 'xrp_usd', name: 'XRP/USD', category: 'crypto' },
   { id: 'ltc_usd', name: 'LTC/USD', category: 'crypto' },
   { id: 'ada_usd', name: 'ADA/USD', category: 'crypto' },
+  { id: 'bnb_usd', name: 'BNB/USD', category: 'crypto' },
+  { id: 'sol_usd', name: 'SOL/USD', category: 'crypto' },
+  { id: 'doge_usd', name: 'DOGE/USD', category: 'crypto' },
   { id: 'aapl', name: 'Apple', category: 'stocks' },
   { id: 'tsla', name: 'Tesla', category: 'stocks' },
   { id: 'googl', name: 'Google', category: 'stocks' },
   { id: 'amzn', name: 'Amazon', category: 'stocks' },
   { id: 'msft', name: 'Microsoft', category: 'stocks' },
+  { id: 'meta', name: 'Meta', category: 'stocks' },
+  { id: 'nvda', name: 'NVIDIA', category: 'stocks' },
+  { id: 'nflx', name: 'Netflix', category: 'stocks' },
   { id: 'gold', name: 'Золото', category: 'commodities' },
   { id: 'silver', name: 'Серебро', category: 'commodities' },
   { id: 'oil', name: 'Нефть', category: 'commodities' },
@@ -45,6 +72,7 @@ const assets: Asset[] = [
 export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState<string>('forex');
   const [selectedAsset, setSelectedAsset] = useState<string>('');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<number>(3);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<Analysis | null>(null);
   const [history, setHistory] = useState<Analysis[]>([]);
@@ -52,7 +80,7 @@ export default function Index() {
   const filteredAssets = assets.filter(asset => asset.category === selectedCategory);
 
   const performAnalysis = () => {
-    if (!selectedAsset) return;
+    if (!selectedAsset || !selectedTimeframe) return;
 
     setIsAnalyzing(true);
 
@@ -67,6 +95,7 @@ export default function Index() {
         callPercent,
         putPercent,
         recommendation,
+        timeframe: selectedTimeframe,
         timestamp: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
       };
 
@@ -95,7 +124,7 @@ export default function Index() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Категория</label>
                 <Select value={selectedCategory} onValueChange={(val) => {
@@ -149,11 +178,28 @@ export default function Index() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Время сигнала</label>
+                <Select value={selectedTimeframe.toString()} onValueChange={(val) => setSelectedTimeframe(parseInt(val))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Выберите время" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 минута</SelectItem>
+                    <SelectItem value="2">2 минуты</SelectItem>
+                    <SelectItem value="3">3 минуты</SelectItem>
+                    <SelectItem value="5">5 минут</SelectItem>
+                    <SelectItem value="10">10 минут</SelectItem>
+                    <SelectItem value="15">15 минут</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <Button 
               onClick={performAnalysis} 
-              disabled={!selectedAsset || isAnalyzing}
+              disabled={!selectedAsset || !selectedTimeframe || isAnalyzing}
               className="w-full h-12 text-lg"
             >
               {isAnalyzing ? (
@@ -180,9 +226,15 @@ export default function Index() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="text-center space-y-2">
-                <div className="text-sm text-muted-foreground">Актив</div>
-                <div className="text-3xl font-bold text-foreground">{currentAnalysis.asset}</div>
+              <div className="text-center space-y-3">
+                <div>
+                  <div className="text-sm text-muted-foreground">Актив</div>
+                  <div className="text-3xl font-bold text-foreground">{currentAnalysis.asset}</div>
+                </div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/20 rounded-full">
+                  <Icon name="Clock" className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Таймфрейм: {currentAnalysis.timeframe} мин</span>
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -240,7 +292,7 @@ export default function Index() {
                 <span className="text-sm text-foreground">
                   Рекомендация: Открыть позицию <strong className={
                     currentAnalysis.recommendation === 'CALL' ? 'text-success' : 'text-destructive'
-                  }>{currentAnalysis.recommendation}</strong> на {currentAnalysis.asset}
+                  }>{currentAnalysis.recommendation}</strong> на {currentAnalysis.asset} на <strong>{currentAnalysis.timeframe} минут</strong>
                 </span>
               </div>
             </CardContent>
@@ -279,7 +331,7 @@ export default function Index() {
                       </div>
                       <div>
                         <div className="font-semibold text-foreground">{item.asset}</div>
-                        <div className="text-xs text-muted-foreground">{item.timestamp}</div>
+                        <div className="text-xs text-muted-foreground">{item.timestamp} • {item.timeframe} мин</div>
                       </div>
                     </div>
                     <div className="text-right">
